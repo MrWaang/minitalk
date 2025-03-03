@@ -6,7 +6,7 @@
 /*   By: mah-ming <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/11 14:34:50 by mah-ming          #+#    #+#             */
-/*   Updated: 2025/02/11 19:54:45 by mah-ming         ###   ########.fr       */
+/*   Updated: 2025/03/02 12:53:19 by mah-ming         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,26 +23,25 @@ static void	minitalk_usage(int pid)
 
 void	handler(int sig)
 {
-	static int		count_bit;
-	static char		i;
+	static int		bit;
+	static char		c;
 	static char		buffer[BUFFER_SIZE];
 	static size_t	pos;
 
 	if (sig == SIGUSR1)
-		i |= (1 << count_bit);
-	count_bit++;
-	if (count_bit == 8)
+		c |= (0x01 << bit);
+	bit++;
+	if (bit == 8)
 	{
-		if (pos < BUFFER_SIZE - 1)
-			buffer[pos++] = i;
-		if (i == '\0' || pos >= BUFFER_SIZE - 1)
+		buffer[pos++] = c;
+		if (c == '\0' || pos >= BUFFER_SIZE - 1)
 		{
 			buffer[pos] = '\0';
-			ft_printf("%s\n", buffer);
+			write(1, buffer, pos);
 			pos = 0;
 		}
-		count_bit = 0;
-		i = 0;
+		bit = 0;
+		c = 0;
 	}
 }
 
@@ -58,7 +57,7 @@ int	main(int ac, char **av)
 	}
 	serv_pid = getpid();
 	minitalk_usage(serv_pid);
-	while (ac == 1)
+	while (1)
 	{
 		signal(SIGUSR1, handler);
 		signal(SIGUSR2, handler);

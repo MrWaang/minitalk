@@ -6,7 +6,7 @@
 /*   By: mah-ming <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/11 14:21:58 by mah-ming          #+#    #+#             */
-/*   Updated: 2025/02/11 19:54:41 by mah-ming         ###   ########.fr       */
+/*   Updated: 2025/03/02 12:50:06 by mah-ming         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,12 +46,12 @@ void	send_char(int pid, char c)
 	bit = 0;
 	while (bit < 8)
 	{
-		if (c & (1 << bit))
+		if ((c & (0x01 << bit)) != 0)
 			kill(pid, SIGUSR1);
 		else
 			kill(pid, SIGUSR2);
+		usleep(200);
 		bit++;
-		usleep(100);
 	}
 }
 

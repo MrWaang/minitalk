@@ -6,7 +6,7 @@
 /*   By: mah-ming <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/11 18:22:58 by mah-ming          #+#    #+#             */
-/*   Updated: 2025/02/11 19:54:39 by mah-ming         ###   ########.fr       */
+/*   Updated: 2025/02/11 21:23:13 by mah-ming         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@
 # define BLUE    "\033[0;34m"
 # define RESET   "\033[0m"
 
-# define BUFFER_SIZE 5000
+# define BUFFER_SIZE 4096
 
 # include "ft_printf/ft_printf.h"
 # include <signal.h>
