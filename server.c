@@ -6,11 +6,15 @@
 /*   By: mah-ming <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/11 14:34:50 by mah-ming          #+#    #+#             */
-/*   Updated: 2025/05/21 02:26:18 by mah-ming         ###   ########.fr       */
+/*   Updated: 2025/05/23 17:55:59 by mah-ming         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minitalk.h"
+
+static t_msg	g_msg;
+
+g_msg = {0, 0, 0, NULL, 0, 0, 0};
 
 static void	minitalk_usage(int pid)
 {
@@ -21,27 +25,49 @@ static void	minitalk_usage(int pid)
 	ft_printf(RESET"\t2. Use: ./client %d \"message\"\n\n", pid);
 }
 
+static void	process_size_bit(int sig)
+{
+	if (sig == SIGUSR1)
+		g_msg.size |= (1UL << g_msg.size_bit);
+	g_msg.size_bit++;
+	if (g_msg.size_bit == sizeof(size_t) * 8)
+	{
+		g_msg.buffer = malloc(g_msg.size + 1);
+		if (!g_msg.buffer)
+		{
+			reset_message(&g_msg);
+			return ;
+		}
+		g_msg.phase = 1;
+	}
+}
+
+static void	process_message_bit(void)
+{
+	g_msg.buffer[g_msg.pos] = g_msg.current_char;
+	g_msg.pos++;
+	if (g_msg.current_char == '\0' || g_msg.pos >= g_msg.size)
+	{
+		g_msg.buffer[g_msg.pos] = '\0';
+		write(1, g_msg.buffer, g_msg.pos - 1);
+		write(1, "\n", 1);
+		reset_message(&g_msg);
+	}
+	g_msg.bit = 0;
+	g_msg.current_char = 0;
+}
+
 void	handler(int sig)
 {
-	static int		bit;
-	static char		c;
-	static char		buffer[BUFFER_SIZE];
-	static size_t	pos;
-
-	if (sig == SIGUSR1)
-		c |= (0x01 << bit);
-	bit++;
-	if (bit == 8)
+	if (g_msg.phase == 0)
+		process_size_bit(sig);
+	else
 	{
-		buffer[pos++] = c;
-		if (c == '\0' || pos >= BUFFER_SIZE - 1)
-		{
-			buffer[pos] = '\0';
-			write(1, buffer, pos);
-			pos = 0;
-		}
-		bit = 0;
-		c = 0;
+		if (sig == SIGUSR1)
+			g_msg.current_char |= (0x01 << g_msg.bit);
+		g_msg.bit++;
+		if (g_msg.bit == 8)
+			process_message_bit();
 	}
 }
 
@@ -57,11 +83,9 @@ int	main(int ac, char **av)
 	}
 	serv_pid = getpid();
 	minitalk_usage(serv_pid);
+	signal(SIGUSR1, handler);
+	signal(SIGUSR2, handler);
 	while (1)
-	{
-		signal(SIGUSR1, handler);
-		signal(SIGUSR2, handler);
 		pause();
-	}
 	return (0);
 }
