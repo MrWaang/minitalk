@@ -6,7 +6,7 @@
 /*   By: mah-ming <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/23 17:48:45 by mah-ming          #+#    #+#             */
-/*   Updated: 2025/05/23 17:48:47 by mah-ming         ###   ########.fr       */
+/*   Updated: 2025/05/24 00:36:52 by mah-ming         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,6 @@ void	send_bit(int pid, int bit)
 		kill(pid, SIGUSR1);
 	else
 		kill(pid, SIGUSR2);
-	usleep(200);
 }
 
 void	reset_message(t_msg *msg)
