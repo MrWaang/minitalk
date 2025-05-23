@@ -6,7 +6,7 @@
 /*   By: mah-ming <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/11 14:34:50 by mah-ming          #+#    #+#             */
-/*   Updated: 2025/05/24 01:21:44 by mah-ming         ###   ########.fr       */
+/*   Updated: 2025/05/24 01:33:01 by mah-ming         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,8 +55,9 @@ static void	process_message_bit(void)
 	g_msg.current_char = 0;
 }
 
-void	handler(int sig)
+void	handler(int sig, siginfo_t *info, void *context)
 {
+	(void)context;
 	if (g_msg.phase == 0)
 		process_size_bit(sig);
 	else
@@ -67,11 +68,13 @@ void	handler(int sig)
 		if (g_msg.bit == 8)
 			process_message_bit();
 	}
+	kill(info->si_pid, SIGUSR1);
 }
 
 int	main(int ac, char **av)
 {
-	int	serv_pid;
+	struct sigaction	sa;
+	int					serv_pid;
 
 	(void)av;
 	if (ac != 1)
@@ -81,8 +84,11 @@ int	main(int ac, char **av)
 	}
 	serv_pid = getpid();
 	minitalk_usage(serv_pid);
-	signal(SIGUSR1, handler);
-	signal(SIGUSR2, handler);
+	sa.sa_sigaction = handler;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_SIGINFO;
+	sigaction(SIGUSR1, &sa, NULL);
+	sigaction(SIGUSR2, &sa, NULL);
 	while (1)
 		pause();
 	return (0);

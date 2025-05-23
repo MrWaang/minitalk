@@ -6,11 +6,19 @@
 /*   By: mah-ming <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/11 14:21:58 by mah-ming          #+#    #+#             */
-/*   Updated: 2025/05/24 01:21:44 by mah-ming         ###   ########.fr       */
+/*   Updated: 2025/05/24 01:42:28 by mah-ming         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minitalk.h"
+
+static sig_atomic_t	g_received;
+
+static void	receive_handler(int sig)
+{
+	(void)sig;
+	g_received = 1;
+}
 
 void	send_char(int pid, char c)
 {
@@ -19,7 +27,10 @@ void	send_char(int pid, char c)
 	bit = 0;
 	while (bit < 8)
 	{
+		g_received = 0;
 		send_bit(pid, (c & (0x01 << bit)) != 0);
+		while (!g_received)
+			pause();
 		bit++;
 	}
 }
@@ -31,7 +42,10 @@ void	send_size(int pid, size_t size)
 	bit = 0;
 	while (bit < (int)(sizeof(size_t) * 8))
 	{
+		g_received = 0;
 		send_bit(pid, (size & (1UL << bit)) != 0);
+		while (!g_received)
+			pause();
 		bit++;
 	}
 }
@@ -69,6 +83,7 @@ int	main(int ac, char **av)
 		ft_printf("Invalid PID\n");
 		return (1);
 	}
+	signal(SIGUSR1, receive_handler);
 	send_string(pid, av[2]);
 	return (0);
 }
