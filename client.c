@@ -5,85 +5,85 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: mah-ming <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/02/11 14:21:58 by mah-ming          #+#    #+#             */
-/*   Updated: 2025/05/24 01:42:28 by mah-ming         ###   ########.fr       */
+/*   Created: 2025/05/24 05:58:03 by mah-ming          #+#    #+#             */
+/*   Updated: 2025/05/24 05:58:05 by mah-ming         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minitalk.h"
 
-static sig_atomic_t	g_received;
+volatile sig_atomic_t	g_ack = 0;
 
-static void	receive_handler(int sig)
+static void	handle_ack(int sig)
 {
 	(void)sig;
-	g_received = 1;
+	g_ack = 1;
 }
 
-void	send_char(int pid, char c)
+static void	send_bit(int pid, int bit)
 {
-	int	bit;
+	int	sig;
 
-	bit = 0;
-	while (bit < 8)
+	g_ack = 0;
+	if (bit == 0)
+		sig = SIGUSR1;
+	else
+		sig = SIGUSR2;
+	if (kill(pid, sig) == -1)
 	{
-		g_received = 0;
-		send_bit(pid, (c & (0x01 << bit)) != 0);
-		while (!g_received)
-			pause();
-		bit++;
+		ft_printf("Error: Invalid PID\n");
+		exit(1);
 	}
+	while (!g_ack)
+		usleep(100);
 }
 
-void	send_size(int pid, size_t size)
+static void	send_char(int pid, char c)
 {
-	int	bit;
+	int	i;
 
-	bit = 0;
-	while (bit < (int)(sizeof(size_t) * 8))
-	{
-		g_received = 0;
-		send_bit(pid, (size & (1UL << bit)) != 0);
-		while (!g_received)
-			pause();
-		bit++;
-	}
-}
-
-void	send_string(int pid, char *str)
-{
-	size_t	len;
-	size_t	i;
-
-	len = 0;
-	while (str[len])
-		len++;
-	len++;
-	send_size(pid, len);
 	i = 0;
-	while (i < len)
+	while (i < 8)
 	{
-		send_char(pid, str[i]);
+		send_bit(pid, (c >> i) & 1);
 		i++;
 	}
 }
 
-int	main(int ac, char **av)
+static void	send_string(int pid, char *str)
 {
-	int	pid;
+	int	i;
 
-	if (ac != 3)
+	i = 0;
+	while (str[i])
 	{
-		ft_printf("Usage: %s <server_pid> <message>\n", av[0]);
+		send_char(pid, str[i]);
+		i++;
+	}
+	send_char(pid, '\0');
+}
+
+int	main(int argc, char **argv)
+{
+	int					pid;
+	struct sigaction	sa;
+
+	if (argc != 3)
+	{
+		ft_printf("Usage: %s <PID> <MESSAGE>\n", argv[0]);
 		return (1);
 	}
-	pid = ft_atoi(av[1]);
+	pid = ft_atoi(argv[1]);
 	if (pid <= 0)
 	{
-		ft_printf("Invalid PID\n");
+		ft_printf("Error: Invalid PID\n");
 		return (1);
 	}
-	signal(SIGUSR1, receive_handler);
-	send_string(pid, av[2]);
+	sa.sa_handler = handle_ack;
+	sa.sa_flags = 0;
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGUSR1, &sa, NULL);
+	send_string(pid, argv[2]);
+	ft_printf("Message sent successfully!\n");
 	return (0);
 }
